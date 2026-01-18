@@ -1,0 +1,8 @@
+streamlit
+opencv-python
+mediapipe
+numpy
+diskcache
+google-cloud-texttospeech
+qdrant-client
+pyttsx3

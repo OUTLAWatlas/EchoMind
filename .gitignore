@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+
+# Environments
+.env
+.env.local
+.venv/
+venv/
+
+# VS Code
+.vscode/
+
+# Data / cache
+cache/
+*.mp3
+*.wav
+
+# OS
+.DS_Store
+Thumbs.db
