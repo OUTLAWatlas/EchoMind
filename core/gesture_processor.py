@@ -11,6 +11,7 @@ from typing import Deque, Dict, List, Optional, Tuple
 
 import cv2
 import mediapipe as mp
+from mediapipe.solutions import holistic as mp_holistic
 import numpy as np
 
 # MediaPipe pose landmark indices
@@ -38,7 +39,7 @@ class Window:
 class GestureProcessor:
     def __init__(self, config: Optional[WindowConfig] = None) -> None:
         self.cfg = config or WindowConfig()
-        self.holistic = mp.solutions.holistic.Holistic()
+        self.holistic = mp_holistic.Holistic()
         self.state: str = "IDLE"  # IDLE or ACTIVE
         self.current_window = Window()
         self.prev_wrist: Optional[np.ndarray] = None

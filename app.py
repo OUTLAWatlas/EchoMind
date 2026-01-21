@@ -10,6 +10,10 @@ from typing import Dict, List, Optional
 import cv2
 import diskcache
 import mediapipe as mp
+from mediapipe import solutions as mp_solutions
+from mediapipe.solutions import holistic as mp_holistic
+from mediapipe.solutions import drawing_utils as mp_drawing
+from mediapipe.solutions import drawing_styles as mp_styles
 import numpy as np
 import streamlit as st
 from google.cloud import texttospeech
@@ -18,10 +22,6 @@ from core.controller import GestureController
 from core.controller import SignEncoder, SwipeHandler
 from core.gesture_processor import LEFT_WRIST, RIGHT_WRIST
 from database.qdrant_manager import EchoMindDB
-
-# Drawing utils for overlay
-mp_drawing = mp.solutions.drawing_utils
-mp_styles = mp.solutions.drawing_styles
 
 CACHE_DIR = Path("cache/audio")
 CACHE_DIR.mkdir(parents=True, exist_ok=True)
@@ -176,7 +176,7 @@ def main() -> None:
             cooldown_frames=cooldown,
         )
         controller = GestureController(encoder=encoder, swipe_handler=swipe, db=db)
-        holistic = mp.solutions.holistic.Holistic()
+        holistic = mp_holistic.Holistic()
         tts = GoogleTTSCache()
         return db, controller, holistic, tts
 

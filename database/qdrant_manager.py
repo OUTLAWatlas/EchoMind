@@ -10,17 +10,7 @@ import uuid
 from typing import Any, Dict, Optional
 
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import PointIdsList
-from qdrant_client.models import (
-    Distance,
-    FieldType,
-    HnswConfigDiff,
-    PointStruct,
-    ScalarQuantization,
-    ScalarQuantizationConfig,
-    QuantizationType,
-    VectorParams,
-)
+from qdrant_client.http import models as rest
 
 
 class EchoMindDB:
@@ -49,24 +39,24 @@ class EchoMindDB:
             return
 
         named_vectors = {
-            "hand_motion": VectorParams(
+            "hand_motion": rest.VectorParams(
                 size=self.hand_dim,
-                distance=Distance.COSINE,
-                hnsw_config=HnswConfigDiff(m=32, ef_construct=128),
+                distance=rest.Distance.COSINE,
+                hnsw_config=rest.HnswConfigDiff(m=32, ef_construct=128),
             ),
-            "face_expression": VectorParams(
+            "face_expression": rest.VectorParams(
                 size=self.face_dim,
-                distance=Distance.COSINE,
-                hnsw_config=HnswConfigDiff(m=32, ef_construct=128),
+                distance=rest.Distance.COSINE,
+                hnsw_config=rest.HnswConfigDiff(m=32, ef_construct=128),
             ),
         }
 
         self.client.create_collection(
             collection_name=self.collection_name,
             vectors=named_vectors,
-            quantization_config=ScalarQuantization(
-                scalar=ScalarQuantizationConfig(
-                    type=QuantizationType.INT8,
+            quantization_config=rest.ScalarQuantization(
+                scalar=rest.ScalarQuantizationConfig(
+                    type=rest.QuantizationType.INT8,
                     quantile=0.99,
                     always_ram=True,
                 )
@@ -77,17 +67,17 @@ class EchoMindDB:
         self.client.create_payload_index(
             collection_name=self.collection_name,
             field_name="gloss",
-            field_schema=FieldType.KEYWORD,
+            field_schema=rest.PayloadSchemaType.KEYWORD,
         )
         self.client.create_payload_index(
             collection_name=self.collection_name,
             field_name="dialect",
-            field_schema=FieldType.KEYWORD,
+            field_schema=rest.PayloadSchemaType.KEYWORD,
         )
         self.client.create_payload_index(
             collection_name=self.collection_name,
             field_name="success_count",
-            field_schema=FieldType.INTEGER,
+            field_schema=rest.PayloadSchemaType.INTEGER,
         )
 
     def upsert_correction(
@@ -111,7 +101,7 @@ class EchoMindDB:
         if increment_success:
             payload["success_count"] = int(payload.get("success_count", 0)) + 1
 
-        point = PointStruct(id=pid, vector=vectors, payload=payload)
+        point = rest.PointStruct(id=pid, vector=vectors, payload=payload)
         self.client.upsert(collection_name=self.collection_name, points=[point], wait=True)
         return pid
 
@@ -121,6 +111,6 @@ class EchoMindDB:
             return
         self.client.delete(
             collection_name=self.collection_name,
-            points_selector=PointIdsList(points=[point_id]),
+            points_selector=rest.PointIdsList(points=[point_id]),
             wait=True,
         )
