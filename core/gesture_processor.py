@@ -11,7 +11,7 @@ from typing import Deque, Dict, List, Optional, Tuple
 
 import cv2
 import mediapipe as mp
-from mediapipe.solutions import holistic as mp_holistic
+from mediapipe.python.solutions import holistic as mp_holistic
 import numpy as np
 
 # MediaPipe pose landmark indices

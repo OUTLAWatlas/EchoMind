@@ -1,8 +1,11 @@
 streamlit
 opencv-python
-mediapipe==0.10.9
+mediapipe==0.10.14
 numpy
 diskcache
-google-cloud-texttospeech
+piper-tts
 qdrant-client
 pyttsx3
+protobuf>=4.25.3,<5
+python-dotenv
+tqdm

@@ -32,11 +32,11 @@ class SwipeHandler(Protocol):
 @dataclass
 class ControllerConfig:
     buffer_size: int = 45  # frames (~1.5s at 30 FPS)
-    min_frames: int = 8
-    velocity_start: float = 0.05
-    neutral_offset: float = 0.15
-    neutral_frames: int = 5
-    search_top_k: int = 3
+    min_frames: int = 15  # Increased to require more deliberate gestures
+    velocity_start: float = 0.08  # Higher threshold - less sensitive
+    neutral_offset: float = 0.12  # Easier to trigger end
+    neutral_frames: int = 60  # Hold still ~2 seconds at 30 FPS
+    search_top_k: int = 5  # Show more results
 
 
 @dataclass
@@ -105,22 +105,36 @@ class GestureController:
             self.gs.last_upsert_id = None
 
     def _submit_search(self, vector: List[float], dialect: str, callback: Optional[Callable[[List], None]] = None) -> None:
-        def _task():
+        """Submit search - runs synchronously for Streamlit compatibility."""
+        try:
+            print(f"[SUBMIT] Starting search for dialect={dialect}")
             self.gs.status = "Searching Memory"
-            flt = Filter(must=[FieldCondition(key="dialect", match=MatchValue(value=dialect))]) if dialect else None
-            res = self.db.client.search(
-                collection_name=self.db.collection_name,
-                query_vector=("hand_motion", vector),
+            
+            # Run search synchronously (Streamlit doesn't play well with ThreadPoolExecutor)
+            res = self.db.search_gesture(
+                query_vector=vector,
+                dialect=dialect,
+                vector_name="hand_motion",
                 limit=self.cfg.search_top_k,
-                query_filter=flt,
-                with_payload=True,
             )
+            
+            print(f"[DEBUG] Search returned {len(res) if res else 0} results")
+            if res:
+                for i, hit in enumerate(res[:3]):
+                    print(f"  [{i}] {hit.payload.get('gloss', 'Unknown')} (score: {hit.score:.3f})")
+            
             if callback:
+                print(f"[CALLBACK] Calling callback with {len(res)} results")
                 callback(res)
+            
             with self._lock:
                 self.gs.last_results = res
-                self.gs.status = "Waiting"
-        self._executor.submit(_task)
+                self.gs.status = f"Found {len(res) if res else 0} matches" if res else "No matches found"
+        except Exception as e:
+            print(f"[ERROR] Search failed: {e}")
+            import traceback
+            traceback.print_exc()
+            self.gs.status = f"Search error: {str(e)[:50]}"
 
     def process_frame(
         self,
@@ -148,14 +162,21 @@ class GestureController:
 
         if self.state == "IDLE" and velocity > self.cfg.velocity_start:
             self.state = "RECORDING"
-            self.gs.status = "Recording Gesture"
+            self.gs.status = f"Recording Gesture (v={velocity:.3f})"
             self.gs.neutral_counter = 0
 
         if self.state == "RECORDING":
-            if self._in_neutral(norm_pose):
+            # Trigger on either neutral position OR low velocity (gesture completion)
+            is_neutral = self._in_neutral(norm_pose)
+            is_still = velocity < self.cfg.velocity_start * 0.5
+            
+            if is_neutral or is_still:
                 self.gs.neutral_counter += 1
             else:
                 self.gs.neutral_counter = 0
+            
+            # Update status to show progress
+            self.gs.status = f"Recording ({len(self.buffer)}/{self.cfg.min_frames} frames, neutral={self.gs.neutral_counter}/{self.cfg.neutral_frames})"
 
             if self.gs.neutral_counter >= self.cfg.neutral_frames and len(self.buffer) >= self.cfg.min_frames:
                 self.state = "PROCESSING"
@@ -166,11 +187,13 @@ class GestureController:
             self.gs.last_vector = vector
             self.buffer.clear()
             self.state = "IDLE"
-            self.gs.status = "Searching Memory"
+            self.gs.status = "Encoding gesture..."
+            print(f"[PROCESSING] Encoded vector: {len(vector) if vector else 0} dims")
             if vector:
                 self._submit_search(vector, dialect, callback)
             else:
-                self.gs.status = "Waiting"
+                print("[PROCESSING] Encoding returned None!")
+                self.gs.status = "Encoding failed"
 
     def register_upsert(self, point_id: str) -> None:
         self.gs.last_upsert_id = point_id
