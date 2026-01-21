@@ -67,8 +67,8 @@ brew install espeak portaudio
    
    ```env
    # Qdrant Cloud Connection (required)
-   QDRANT_URL="https://your-cluster-id.region.gcp.cloud.qdrant.io:6333"
-   QDRANT_API_KEY="your-api-key-here"
+   QDRANT_URL="https://22ab3797-0f2e-4cb4-84b9-9e82474a4c69.europe-west3-0.gcp.cloud.qdrant.io"
+   QDRANT_API_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJtIn0.Q-oODCsy17uduR_4vvkhC-YyAwP5MU8VPOxbT8WdufM"
    
    # Qdrant Local Server (fallback, optional)
    QDRANT_HOST="localhost"
